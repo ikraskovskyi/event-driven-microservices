@@ -1,6 +1,6 @@
 # Event-Driven Microservices: the whole system, built from source
 #
-# Start:   docker compose up -d --build
+# Start:   docker compose up -d --build --wait   (returns once all services are healthy)
 # Stop:    docker compose down
 #
 # All data is ephemeral: every start gets empty databases (re-seeded by the
@@ -34,6 +34,14 @@ x-service-env: &service-env
   SPRING_DATASOURCE_USERNAME: postgres
   SPRING_DATASOURCE_PASSWORD: postgres
   SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+# Reads SERVER_PORT from each service's environment
+x-service-healthcheck: &service-healthcheck
+  test: ["CMD-SHELL", "curl -fs http://localhost:$${SERVER_PORT}/actuator/health || exit 1"]
+  interval: 5s
+  timeout: 3s
+  retries: 20
+  start_period: 30s
 
 services:
 
@@ -142,8 +150,10 @@ services:
     ports:
       - "8081:8081"
     environment:
+      SERVER_PORT: 8081
       <<: *service-env
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
+    healthcheck: *service-healthcheck
     depends_on:
       order-db:
         condition: service_healthy
@@ -159,8 +169,10 @@ services:
     ports:
       - "8082:8082"
     environment:
+      SERVER_PORT: 8082
       <<: *service-env
       SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_db
+    healthcheck: *service-healthcheck
     depends_on:
       payment-db:
         condition: service_healthy
@@ -176,8 +188,10 @@ services:
     ports:
       - "8083:8083"
     environment:
+      SERVER_PORT: 8083
       <<: *service-env
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
+    healthcheck: *service-healthcheck
     depends_on:
       inventory-db:
         condition: service_healthy
@@ -193,7 +207,9 @@ services:
     ports:
       - "8084:8084"
     environment:
+      SERVER_PORT: 8084
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    healthcheck: *service-healthcheck
     depends_on:
       kafka-init:
         condition: service_completed_successfully
@@ -207,8 +223,10 @@ services:
     ports:
       - "8085:8085"
     environment:
+      SERVER_PORT: 8085
       <<: *service-env
       SPRING_DATASOURCE_URL: jdbc:postgresql://analytics-db:5432/analytics_db
+    healthcheck: *service-healthcheck
     depends_on:
       analytics-db:
         condition: service_healthy
