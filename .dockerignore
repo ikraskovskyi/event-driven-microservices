@@ -1,0 +1,14 @@
+# Build output and local tooling never belong in the image build context
+**/target/
+.git/
+.idea/
+.vscode/
+**/*.iml
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+**/HELP.md
+*.md
+docker-compose.yml
+Dockerfile
+.dockerignore
