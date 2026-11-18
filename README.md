@@ -1,5 +1,59 @@
 # Event-Driven Microservices
 
+> **Fork notice.** This is a fork of [SirajChaudhary/event-driven-microservices](https://github.com/SirajChaudhary/event-driven-microservices) by Siraj Chaudhary, who wrote the original system. 
+>
+> This fork serves as the system under test for a QA learning project. Changes are limited to making it runnable and testable:
+>
+> - Dockerfile for all services and a Docker Compose setup that runs the whole system with one command
+> - Database schema created by each service on startup (`spring.sql.init`), plus pgAdmin to browse the databases in a browser
+> - Actuator health and Prometheus metrics endpoints for container healthchecks and performance monitoring
+> - `GET /api/v1/orders/{orderId}` to read an order's status
+>
+> The business logic is unchanged. The original README starts at [Overview](#overview), unchanged except for a note in its setup section.
+
+# How to run (this fork)
+
+Requires only Docker with Compose v2.
+
+```bash
+docker compose up -d --build --wait   # returns once all services are healthy
+docker compose down                   # stop and remove everything
+```
+
+| What | Where |
+|---|---|
+| Kafka UI: topics and messages | http://localhost:8080 (change with `KAFKA_UI_PORT=8090 docker compose up ...`) |
+| Kafka, from the host (outside Docker) | `localhost:29092` |
+| pgAdmin: browse all 4 databases, no login | http://localhost:5050 (change with `PGADMIN_PORT`) |
+| Postgres, with any SQL client | `localhost:5432` order_db, `5433` payment_db, `5434` inventory_db, `5435` analytics_db (user/password `postgres`) |
+| Order API (Swagger): create an order, then read its status | http://localhost:8081/swagger-ui.html |
+| Analytics API (Swagger) | http://localhost:8085/swagger-ui.html |
+| Health / Prometheus metrics | `http://localhost:808x/actuator/health`, `/actuator/prometheus` (ports 8081–8085) |
+
+Notes:
+- **Data is ephemeral.** Every start gets fresh databases with stock reset to its initial values, and freshly created topics.
+- **Restart the whole stack**, not single containers. A recreated Kafka container starts without topics.
+- **For local use only.** pgAdmin has no login and all passwords are hardcoded.
+- The manual setup in [How to run the Project](#how-to-run-the-project) below is the original one. With Docker Compose you don't need it.
+
+## Products for each scenario
+
+The original project handles some product IDs specially to demonstrate different saga paths. These are spread across the README below, so here is a summary for convenience. It describes the behaviour as intended by the original author, not verified results.
+
+| Product | Initial stock | Scenario |
+|---|---|---|
+| 1001, 1002, 1004, 1005 | 100, 50, 10, 5 | Happy path: order COMPLETED |
+| 1006 | 1 | Last item in stock: one order COMPLETED, the next CANCELLED |
+| 1007 | 0 | Out of stock: payment refunded, order CANCELLED |
+| Not in inventory (e.g. 5555) | — | Unknown product: payment refunded, order CANCELLED |
+| 1003 | 25 | Retry processing (simulated technical failure) |
+| 9999 | — | Retry and dead letter topic (simulated failure) |
+
+
+---
+
+*The original README starts here.*
+
 # Overview
 
 This project simulates an E-Commerce Order Processing Platform built using Event-Driven Microservices Architecture with Spring Boot, Apache Kafka, PostgreSQL, and Docker.
@@ -241,6 +295,8 @@ Database: `analytics_db`
 
 
 # How to run the Project
+
+> **Fork note:** this is the original manual setup. Use [How to run (this fork)](#how-to-run-this-fork) instead. Don't run the SQL scripts by hand: the services now create their schema on startup and fail if the tables already exist.
 
 ### Step 1: Start Kafka Infrastructure
 
