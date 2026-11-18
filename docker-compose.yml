@@ -12,6 +12,7 @@
 #   8083 inventory-service  8080 Kafka UI (override: KAFKA_UI_PORT)
 #   29092 Kafka (from the host)
 #   5432-5435 Postgres: order, payment, inventory, analytics
+#   5050 pgAdmin (override: PGADMIN_PORT)
 
 # ==========================================================
 # Shared definitions 
@@ -136,6 +137,30 @@ services:
       POSTGRES_DB: analytics_db
     ports:
       - "5435:5432"
+  pgadmin:
+    image: dpage/pgadmin4:9.10
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgadmin4/pgpass:ro
+    entrypoint: ["/bin/sh", "-c", "cp /pgadmin4/pgpass /tmp/pgpass && chmod 600 /tmp/pgpass && exec /entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:80/misc/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    depends_on:
+      - order-db
+      - payment-db
+      - inventory-db
+      - analytics-db
 
   # ==========================================================
   # Services
