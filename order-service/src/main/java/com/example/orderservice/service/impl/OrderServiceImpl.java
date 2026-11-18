@@ -3,9 +3,11 @@ package com.example.orderservice.service.impl;
 import com.example.contracts.event.OrderCreatedEvent;
 import com.example.orderservice.dto.CreateOrderRequest;
 import com.example.orderservice.dto.CreateOrderResponse;
+import com.example.orderservice.dto.OrderResponse;
 import com.example.orderservice.entity.Order;
 import com.example.orderservice.entity.OutboxEvent;
 import com.example.orderservice.enums.OrderStatus;
+import com.example.orderservice.exception.OrderNotFoundException;
 import com.example.orderservice.kafka.OrderEventProducer;
 import com.example.orderservice.repository.OrderRepository;
 import com.example.orderservice.repository.OutboxEventRepository;
@@ -122,6 +124,24 @@ public class OrderServiceImpl implements OrderService {
         return new CreateOrderResponse(
                 order.getId(),
                 order.getStatus().name());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public OrderResponse getOrder(UUID orderId) {
+
+        Order order = orderRepository
+                        .findById(orderId)
+                        .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        return new OrderResponse(
+                order.getId(),
+                order.getCustomerId(),
+                order.getProductId(),
+                order.getQuantity(),
+                order.getAmount(),
+                order.getStatus().name(),
+                order.getCreatedAt());
     }
 
     /**
