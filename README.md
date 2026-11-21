@@ -8,6 +8,7 @@
 > - Database schema created by each service on startup (`spring.sql.init`), plus pgAdmin to browse the databases in a browser
 > - Actuator health and Prometheus metrics endpoints for container healthchecks and performance monitoring
 > - `GET /api/v1/orders/{orderId}` to read an order's status
+> - GitHub Actions workflow publishing the service images to GHCR, so tests can run against them without building from source
 >
 > The business logic is unchanged. The original README starts at [Overview](#overview), unchanged except for a note in its setup section.
 
@@ -34,6 +35,7 @@ Notes:
 - **Data is ephemeral.** Every start gets fresh databases with stock reset to its initial values, and freshly created topics.
 - **Restart the whole stack**, not single containers. A recreated Kafka container starts without topics.
 - **For local use only.** pgAdmin has no login and all passwords are hardcoded.
+- **Prebuilt images** are published on every push to `main`: `ghcr.io/ikraskovskyi/event-driven-microservices/<service>`, tagged `sha-<short commit>` and `latest`.
 - The manual setup in [How to run the Project](#how-to-run-the-project) below is the original one. With Docker Compose you don't need it.
 
 ## Products for each scenario
